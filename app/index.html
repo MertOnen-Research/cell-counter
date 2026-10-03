@@ -5146,6 +5146,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
     try{
       const reg = await navigator.serviceWorker.ready;
       const urls = performance.getEntriesByType('resource').map(e=>e.name).filter(u=>/^https?:/.test(u));
+      // The AI runtime fetches its WebAssembly pair from inside a worker, which this page cannot list; on a slow first
+      // visit that can happen before the service worker is in control, so name the two files here.
+      if(window.ort) urls.push(AI_ORT_BASE + 'ort-wasm-simd-threaded.jsep.mjs', AI_ORT_BASE + 'ort-wasm-simd-threaded.jsep.wasm');
       if(reg.active) reg.active.postMessage({type: 'precache', urls});
     }catch(_){}
   }
