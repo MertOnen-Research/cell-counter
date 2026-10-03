@@ -1,0 +1,70 @@
+# Builds the desktop app for Mac, Windows and Linux. A tag like v1.0.0 also publishes the files as a release,
+# which is what the "Download" buttons point at.
+name: Desktop app
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build for ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS, os: macos-latest, flags: --mac }
+          - { name: Windows, os: windows-latest, flags: --win }
+          - { name: Linux, os: ubuntu-latest, flags: --linux }
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install the build tools
+        run: npm ci
+      - name: Gather the app and its libraries
+        run: node prepare.js
+      - name: Package
+        run: npx electron-builder ${{ matrix.flags }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cell-counter-${{ matrix.name }}
+          path: |
+            desktop/dist/Cell-Counter-*.dmg
+            desktop/dist/Cell-Counter-*.exe
+            desktop/dist/Cell-Counter-*.AppImage
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create the release and attach the downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "Cell Counter ${GITHUB_REF_NAME#v}" --notes-file .github/release-notes.md
+          gh release upload "$GITHUB_REF_NAME" dist/Cell-Counter-* --clobber

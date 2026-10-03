@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /cell_counter_model.js
+
+Sitemap: https://cell-counter.netlify.app/sitemap.xml

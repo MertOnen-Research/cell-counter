@@ -1,0 +1,14 @@
+# Only the app, the desktop wrapper and the project pages are published.
+# Everything else in this folder (experiment photos, labels, working notes) stays on this computer.
+/*
+!/.gitignore
+!/.github/
+!/README.md
+!/THIRD_PARTY_NOTICES.md
+!/app/
+!/desktop/
+
+/desktop/node_modules/
+/desktop/bundle/
+/desktop/dist/
+.DS_Store
